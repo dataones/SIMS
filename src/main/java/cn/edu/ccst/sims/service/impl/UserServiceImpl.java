@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;  // Spring 自带 MD5
 
 import java.math.BigDecimal;
+import java.util.Map;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -80,5 +81,43 @@ public class UserServiceImpl implements UserService {
         user.setBalance(BigDecimal.ZERO);
         user.setStatus(1);
         userMapper.insert(user);
+    }
+    // 新增：获取用户详细信息
+    public Map<String, Object> getUserInfo(Integer userId) {
+        SysUser user = userMapper.selectById(userId);
+
+        if (user == null) {
+            throw new RuntimeException("用户不存在");
+        }
+
+        // 构建返回的用户信息，注意排除敏感信息
+        Map<String, Object> userInfo = new java.util.HashMap<>();
+        userInfo.put("id", user.getId());
+        userInfo.put("username", user.getUsername());
+        userInfo.put("nickname", user.getNickname());
+        userInfo.put("phone", user.getPhone());
+        userInfo.put("email", user.getEmail());
+        userInfo.put("role", user.getRole());
+        userInfo.put("balance", user.getBalance());
+        userInfo.put("status", user.getStatus());
+        userInfo.put("createTime", user.getCreateTime());
+        userInfo.put("updateTime", user.getUpdateTime());
+
+        return userInfo;
+    }
+    @Override
+    public Integer getUserIdFromToken(String token) {
+        // 移除 "Bearer " 前缀（如果有）
+        if (token != null && token.startsWith("Bearer ")) {
+            token = token.substring(7);
+        }
+
+        try {
+            // 使用您原有的JwtUtil获取用户ID，并转换为Integer
+            Long userIdLong = jwtUtil.getUserId(token);
+            return userIdLong != null ? userIdLong.intValue() : null;
+        } catch (Exception e) {
+            throw new RuntimeException("Token解析失败");
+        }
     }
 }

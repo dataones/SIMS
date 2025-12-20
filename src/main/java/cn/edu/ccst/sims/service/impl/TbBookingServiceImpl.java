@@ -2,9 +2,11 @@ package cn.edu.ccst.sims.service.impl;
 
 import cn.edu.ccst.sims.dto.BookingDTO;
 import cn.edu.ccst.sims.entity.TbBooking;
+import cn.edu.ccst.sims.entity.TbOrder;
 import cn.edu.ccst.sims.entity.TbVenue;
 import cn.edu.ccst.sims.mapper.TbBookingMapper;
 import cn.edu.ccst.sims.mapper.TbVenueMapper;
+import cn.edu.ccst.sims.mapper.TbOrderMapper;
 import cn.edu.ccst.sims.service.TbBookingService;
 import cn.edu.ccst.sims.ov.BookingVO;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -38,7 +40,8 @@ public class TbBookingServiceImpl extends ServiceImpl<TbBookingMapper, TbBooking
 
     @Autowired
     private TbVenueMapper venueMapper;
-
+    @Autowired
+    private TbOrderMapper orderMapper;
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long submitBooking(BookingDTO bookingDTO, Long userId) {
@@ -70,17 +73,36 @@ public class TbBookingServiceImpl extends ServiceImpl<TbBookingMapper, TbBooking
                 bookingDTO.getEndTime());
 
         // 6. 创建预约记录
+        // 6. 生成统一的订单号
+        String orderNo = generateOrderNo();  // 使用BK开头的单号
+
+// 创建预约记录
         TbBooking booking = new TbBooking();
         BeanUtils.copyProperties(bookingDTO, booking);
-        booking.setOrderNo(generateOrderNo());
+        booking.setOrderNo(orderNo);  // 预约记录也使用这个单号
         booking.setUserId(userId);
         booking.setTotalPrice(totalPrice);
         booking.setStatus(0); // 待审核
         booking.setCreateTime(LocalDateTime.now());
         booking.setUpdateTime(LocalDateTime.now());
 
-        save(booking);
+        save(booking);  // 保存预约记录
+
+// 7. 创建订单记录
+        TbOrder order = new TbOrder();
+        order.setOrderNo(orderNo);  // 使用同一个单号
+        order.setUserId(userId);
+        order.setRelatedId(booking.getId());  // 关联预约ID
+        order.setType(1);  // 1-场馆预约
+        order.setAmount(totalPrice);
+        order.setStatus(0);  // 0-未支付
+        order.setCreateTime(LocalDateTime.now());
+        order.setUpdateTime(LocalDateTime.now());
+
+        orderMapper.insert(order);  // 保存订单记录
+
         return booking.getId();
+
     }
 
     @Override
@@ -268,7 +290,9 @@ public class TbBookingServiceImpl extends ServiceImpl<TbBookingMapper, TbBooking
         long minutes = java.time.Duration.between(start, end).toMinutes();
         BigDecimal hours = BigDecimal.valueOf(minutes).divide(BigDecimal.valueOf(60), 2, BigDecimal.ROUND_HALF_UP);
 
-        return venue.getPrice().multiply(hours);
+        return venue.getPrice()
+                .multiply(hours)
+                .multiply(new BigDecimal("1.1"));
     }
 
     /**

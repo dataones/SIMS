@@ -1,8 +1,11 @@
 package cn.edu.ccst.sims.service;
 
 import cn.edu.ccst.sims.common.Result;
+import cn.edu.ccst.sims.entity.TbOrder;
+import cn.edu.ccst.sims.ov.OrderVO;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 public interface TbOrderSettlementService {
 
@@ -20,4 +23,8 @@ public interface TbOrderSettlementService {
 
     // 退款
     Result<Void> refundOrder(String orderNo, BigDecimal refundAmount);
+    // 订单详情
+    Result<TbOrder> getOrderDetail(Long userId, String orderNo);
+    //订单列表
+    Result<List<OrderVO>> listOrders(Long userId, Integer type);
 }

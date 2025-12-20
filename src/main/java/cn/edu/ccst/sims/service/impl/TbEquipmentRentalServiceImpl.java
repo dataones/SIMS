@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.validation.constraints.Min;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -54,24 +55,32 @@ public class TbEquipmentRentalServiceImpl implements TbEquipmentRentalService {
             return Result.error("库存不足");
         }
 
+        // 计算总费用
+        BigDecimal totalPrice = equipment.getPrice().multiply(BigDecimal.valueOf(count));
+
         // 新增借用记录
         TbEquipmentRental rental = new TbEquipmentRental();
+        String orderNo = "EQ" + System.currentTimeMillis() + String.format("%03d", (int)(Math.random() * 1000));
         rental.setUserId(userId);
         rental.setEquipmentId(equipmentId);
         rental.setCount(count);
-        rental.setPrice(equipment.getPrice().multiply(BigDecimal.valueOf(count)));
+        rental.setPrice(totalPrice);  // 使用计算好的totalPrice
         rental.setStatus(1); // 申请中
+        rental.setOrderNo(orderNo);  // 借用记录也使用订单号
+        rental.setCreateTime(LocalDateTime.now());
+        rental.setUpdateTime(LocalDateTime.now());
         rentalMapper.insert(rental);
 
-        // 创建订单（未支付）
+        // 创建订单（使用同一个单号）
         TbOrder order = new TbOrder();
-        String orderNo = "EQ" + System.currentTimeMillis() + (int)(Math.random() * 900 + 100);
-        order.setOrderNo(orderNo);
+        order.setOrderNo(orderNo);  // 使用同一个单号
         order.setUserId(userId);
         order.setRelatedId(rental.getId());
         order.setType(2); // 器材租赁
-        order.setAmount(rental.getPrice());
+        order.setAmount(totalPrice);  // 使用计算好的totalPrice
         order.setStatus(0); // 未支付
+        order.setCreateTime(LocalDateTime.now());
+        order.setUpdateTime(LocalDateTime.now());
         orderMapper.insert(order);
 
         return Result.success(rental.getId());

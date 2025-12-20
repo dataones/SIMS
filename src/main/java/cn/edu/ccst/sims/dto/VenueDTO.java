@@ -14,5 +14,6 @@ public class VenueDTO {
     private String image;
     private String openTime;
     private String closeTime;
-    private Integer status;    // 1-正常, 0-维护中
+    private Integer status;
+    private String remark;// 1-正常, 0-维护中
 }

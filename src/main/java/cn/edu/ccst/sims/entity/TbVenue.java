@@ -62,4 +62,9 @@ public class TbVenue {
      * 更新时间
      */
     private LocalDateTime updateTime;
+    /**
+     * 场馆说明
+     */
+    private String remark;
+
 }

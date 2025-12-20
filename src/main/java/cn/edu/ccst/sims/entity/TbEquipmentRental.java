@@ -21,7 +21,12 @@ public class TbEquipmentRental {
     /**
      * 借用人ID
      */
+
     private Long userId;
+    /**
+     * 借用单号
+     */
+    private String orderNo;
     /**
      * 器材ID
      */
