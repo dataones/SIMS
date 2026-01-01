@@ -46,4 +46,12 @@ public class TbEquipment {
      * 更新时间
      */
     private LocalDateTime updateTime;
+    /**
+     * 规格
+     */
+    private String specification;
+    /**
+     * 品牌
+     */
+    private String brand;
 }

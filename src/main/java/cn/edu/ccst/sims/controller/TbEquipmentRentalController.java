@@ -1,8 +1,10 @@
 package cn.edu.ccst.sims.controller;
 
 import cn.edu.ccst.sims.common.Result;
+import cn.edu.ccst.sims.entity.TbEquipment;
 import cn.edu.ccst.sims.entity.TbEquipmentRental;
 import cn.edu.ccst.sims.service.TbEquipmentRentalService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -16,6 +18,7 @@ import java.util.List;
 public class TbEquipmentRentalController {
 
     private final TbEquipmentRentalService rentalService;
+
 
     public TbEquipmentRentalController(TbEquipmentRentalService rentalService) {
         this.rentalService = rentalService;
@@ -61,5 +64,10 @@ public class TbEquipmentRentalController {
     public Result<Void> returnEquipment(@AuthenticationPrincipal Long userId,
                                         @PathVariable Long id) {
         return rentalService.returnEquipment(id, userId);
+    }
+    /** 获取所有器材列表 */
+    @GetMapping("/equipment-list")
+    public Result<List<TbEquipment>> getAllEquipments() {
+        return rentalService.getAllEquipments();
     }
 }

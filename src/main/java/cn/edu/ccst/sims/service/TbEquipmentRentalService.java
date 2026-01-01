@@ -1,11 +1,16 @@
 package cn.edu.ccst.sims.service;
 
 import cn.edu.ccst.sims.common.Result;
+import cn.edu.ccst.sims.entity.TbEquipment;
 import cn.edu.ccst.sims.entity.TbEquipmentRental;
 
 import java.util.List;
 
 public interface TbEquipmentRentalService {
+    /**
+     * 获取所有器材列表
+     */
+    Result<List<TbEquipment>> getAllEquipments();
 
     // 用户提交借用申请
     Result<Long> applyRental(Long userId, Long equipmentId, Integer count);

@@ -85,6 +85,17 @@ public class TbEquipmentRentalServiceImpl implements TbEquipmentRentalService {
 
         return Result.success(rental.getId());
     }
+    @Override
+    public Result<List<TbEquipment>> getAllEquipments() {
+        try {
+            LambdaQueryWrapper<TbEquipment> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.orderByDesc(TbEquipment::getCreateTime);
+            List<TbEquipment> equipments = equipmentMapper.selectList(queryWrapper);  // 使用 equipmentMapper
+            return Result.success(equipments);
+        } catch (Exception e) {
+            return Result.error("查询器材列表失败: " + e.getMessage());
+        }
+    }
 
     /**
      * 查询我的借用记录

@@ -28,21 +28,24 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
 
                 .authorizeHttpRequests(auth -> auth
-                        // 🔴 ③ 放行所有 OPTIONS 预检请求（关键）
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                        // 公开接口
+                        // 登录注册这些匿名访问
                         .requestMatchers("/api/auth/**").permitAll()
+
+                        // 只放行“查看”类接口
                         .requestMatchers(
                                 "/api/venue/list",
                                 "/api/venue/detail/**",
-                                "/api/equipment-rentals",
-                                "/api/equipment-rentals/my",
-                                "/api/reviews/**",
+                                "/api/equipment-rentals",   // 如果是公共列表
                                 "/api/venues/**"
                         ).permitAll()
 
-                        // 🔴 ④ 预约查询接口（给前端用，必须放行）
+                        // 我的租赁、提交评价 等需要登录
+                        .requestMatchers("/api/equipment-rentals/my").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/reviews/**").authenticated()
+                        .requestMatchers(HttpMethod.GET,  "/api/reviews/**").permitAll()
+
                         .requestMatchers("/api/booking/booked-slots").permitAll()
 
                         // 管理员接口
@@ -53,7 +56,7 @@ public class SecurityConfig {
                                 "/api/admin/equipment-rentals/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/venue/**").hasRole("ADMIN")
 
-                        // 其他接口需要登录
+                        // 其他都需要登录
                         .anyRequest().authenticated()
                 )
 
