@@ -1,4 +1,4 @@
-package cn.edu.ccst.sims.ov;
+package cn.edu.ccst.sims.vo;
 
 import lombok.Data;
 

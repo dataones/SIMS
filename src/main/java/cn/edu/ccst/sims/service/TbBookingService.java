@@ -2,7 +2,7 @@ package cn.edu.ccst.sims.service;
 
 import cn.edu.ccst.sims.dto.BookingDTO;
 import cn.edu.ccst.sims.entity.TbBooking;
-import cn.edu.ccst.sims.ov.BookingVO;
+import cn.edu.ccst.sims.vo.BookingVO;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;

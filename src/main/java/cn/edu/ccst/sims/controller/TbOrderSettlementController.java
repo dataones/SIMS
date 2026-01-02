@@ -2,7 +2,7 @@ package cn.edu.ccst.sims.controller;
 
 import cn.edu.ccst.sims.common.Result;
 import cn.edu.ccst.sims.entity.TbOrder;
-import cn.edu.ccst.sims.ov.OrderVO;
+import cn.edu.ccst.sims.vo.OrderVO;
 import cn.edu.ccst.sims.service.TbOrderSettlementService;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;

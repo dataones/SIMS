@@ -1,4 +1,4 @@
-package cn.edu.ccst.sims.ov;
+package cn.edu.ccst.sims.vo;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;

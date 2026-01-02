@@ -1,6 +1,7 @@
 package cn.edu.ccst.sims.mapper;
 
 import cn.edu.ccst.sims.entity.TbBooking;
+import cn.edu.ccst.sims.vo.BookingApprovalVO;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -62,4 +63,12 @@ public interface TbBookingMapper extends BaseMapper<TbBooking> {
             "AND status IN (0, 1) " +
             "ORDER BY start_time")
     List<TbBooking> selectByVenueAndDate(@Param("venueId") Long venueId, @Param("date") LocalDate date);
+    // 查询所有待审核的预约 (status = 0)
+    @Select("SELECT b.*, u.username, u.nickname, v.name as venue_name " +
+            "FROM tb_booking b " +
+            "LEFT JOIN sys_user u ON b.user_id = u.id " +
+            "LEFT JOIN tb_venue v ON b.venue_id = v.id " +
+            "WHERE b.status = 0 " +
+            "ORDER BY b.create_time DESC")
+    List<BookingApprovalVO> selectPendingBookings();
 }

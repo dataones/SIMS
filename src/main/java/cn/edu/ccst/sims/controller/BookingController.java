@@ -5,7 +5,7 @@ import cn.edu.ccst.sims.dto.BookingDTO;
 import cn.edu.ccst.sims.entity.SysUser;
 import cn.edu.ccst.sims.mapper.SysUserMapper;
 import cn.edu.ccst.sims.service.TbBookingService;
-import cn.edu.ccst.sims.ov.BookingVO;
+import cn.edu.ccst.sims.vo.BookingVO;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.swagger.v3.oas.annotations.Operation;

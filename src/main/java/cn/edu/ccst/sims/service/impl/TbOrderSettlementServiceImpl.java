@@ -3,7 +3,7 @@ package cn.edu.ccst.sims.service.impl;
 import cn.edu.ccst.sims.common.Result;
 import cn.edu.ccst.sims.entity.*;
 import cn.edu.ccst.sims.mapper.*;
-import cn.edu.ccst.sims.ov.OrderVO;
+import cn.edu.ccst.sims.vo.OrderVO;
 import cn.edu.ccst.sims.service.TbOrderSettlementService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -15,7 +15,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 
 @Service
 public class TbOrderSettlementServiceImpl extends ServiceImpl<TbOrderMapper, TbOrder> implements TbOrderSettlementService {
