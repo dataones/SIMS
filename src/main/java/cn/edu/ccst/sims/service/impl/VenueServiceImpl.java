@@ -41,21 +41,20 @@ public class VenueServiceImpl implements VenueService {
             wrapper.like("name", name);
         }
 
-        // status 处理逻辑
+        // ============ 修改开始 ============
+        // 原逻辑：没有 status 默认查 1
+        // 新逻辑：没有 status 就不加限制（查全部），有 status 才查对应的
         if (status != null) {
             wrapper.eq("status", status);
-        } else {
-            wrapper.eq("status", 1); // 默认只显示正常场馆
         }
+        // 删除 else { wrapper.eq("status", 1); }
+        // ============ 修改结束 ============
 
         wrapper.orderByAsc("price");
 
-        Page<TbVenue> page =
-                venueMapper.selectPage(new Page<>(pageNum, pageSize), wrapper);
+        Page<TbVenue> page = venueMapper.selectPage(new Page<>(pageNum, pageSize), wrapper);
 
-        // ⭐⭐ 关键修复点
-        Page<VenueDTO> dtoPage =
-                new Page<>(page.getCurrent(), page.getSize(), page.getTotal());
+        Page<VenueDTO> dtoPage = new Page<>(page.getCurrent(), page.getSize(), page.getTotal());
         dtoPage.setRecords(new ArrayList<>());
 
         page.getRecords().forEach(venue -> {

@@ -196,25 +196,34 @@ public class TbEquipmentRentalServiceImpl implements TbEquipmentRentalService {
     /**
      * 用户归还器材
      */
+    /**
+     * 用户归还器材（按订单号）
+     */
     @Override
     @Transactional
-    public Result<Void> returnEquipment(Long rentalId, Long userId) {
+    public Result<Void> returnEquipment(String orderNo, Long userId) {
 
-        TbEquipmentRental rental = rentalMapper.selectById(rentalId);
+        // 1. 先通过订单号找到借用记录：tb_equipment_rental.order_no
+        TbEquipmentRental rental = rentalMapper.selectOne(
+                new LambdaQueryWrapper<TbEquipmentRental>()
+                        .eq(TbEquipmentRental::getOrderNo, orderNo)
+        );
         if (rental == null || !rental.getUserId().equals(userId)) {
             return Result.error("借用记录不存在或不属于当前用户");
         }
 
+        // 2. 校验状态
         if (rental.getStatus() != 2) {
             return Result.error("借用状态不允许归还");
         }
 
+        // 3. 查器材
         TbEquipment equipment = equipmentMapper.selectById(rental.getEquipmentId());
         if (equipment == null) {
             return Result.error("器材不存在");
         }
 
-        // 减库存（乐观锁）
+        // 4. 减库存（乐观锁）
         LambdaUpdateWrapper<TbEquipment> updateWrapper = new LambdaUpdateWrapper<>();
         updateWrapper.eq(TbEquipment::getId, equipment.getId())
                 .eq(TbEquipment::getRentedStock, equipment.getRentedStock())
@@ -224,17 +233,19 @@ public class TbEquipmentRentalServiceImpl implements TbEquipmentRentalService {
             return Result.error("库存更新失败，请重试");
         }
 
+        // 5. 更新借用状态为“已归还”
         rental.setStatus(3); // 已归还
         rentalMapper.updateById(rental);
 
-        // 同步订单状态（如果需要退费可以在此处理）
+        // 6. 同步订单状态（用 related_id = rental.id 关联）
         TbOrder order = orderMapper.selectOne(
                 new LambdaQueryWrapper<TbOrder>()
-                        .eq(TbOrder::getRelatedId, rentalId)
+                        .eq(TbOrder::getRelatedId, rental.getId()) // 注意这里用 rental.getId()
                         .eq(TbOrder::getType, 2)
         );
         if (order != null) {
             order.setStatus(1); // 已支付，保持订单已支付
+            orderMapper.updateById(order);
         }
 
         return Result.success();

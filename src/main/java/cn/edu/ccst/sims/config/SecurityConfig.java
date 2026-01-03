@@ -38,7 +38,8 @@ public class SecurityConfig {
                                 "/api/venue/list",
                                 "/api/venue/detail/**",
                                 "/api/equipment-rentals",   // 如果是公共列表
-                                "/api/venues/**"
+                                "/api/venues/**", "/api/venues/*/reviews",
+                                "/api/venues/*/reviews/stats"
                         ).permitAll()
 
                         // 我的租赁、提交评价 等需要登录

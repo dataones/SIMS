@@ -60,14 +60,15 @@ public class TbEquipmentRentalController {
     }
 
     /** 用户归还器材 */
-    @PutMapping("/equipment-rentals/{id}/return")
+    @PutMapping("/equipment-rentals/{orderNo}/return")
     public Result<Void> returnEquipment(@AuthenticationPrincipal Long userId,
-                                        @PathVariable Long id) {
-        return rentalService.returnEquipment(id, userId);
+                                        @PathVariable String orderNo) {
+        System.out.print("传入的orderNo为"+orderNo);
+        return rentalService.returnEquipment(orderNo, userId);
     }
     /** 获取所有器材列表 */
     @GetMapping("/equipment-list")
-    public Result<List<TbEquipment>> getAllEquipments() {
+   public Result<List<TbEquipment>> getAllEquipments() {
         return rentalService.getAllEquipments();
     }
 }

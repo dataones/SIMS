@@ -34,6 +34,8 @@ public class TbReviewController {
 
     @GetMapping("/venues/{venueId}/reviews")
     public Result<Map<String, Object>> getVenueReviews(@PathVariable Long venueId) {
+        System.out.println(reviewService.getReviewsByVenueId(venueId));
+
         return reviewService.getReviewsByVenueId(venueId);
     }
 
@@ -44,6 +46,7 @@ public class TbReviewController {
 
     @GetMapping("/venues/{venueId}/reviews/stats")
     public Result<Map<String, Object>> getVenueReviewStats(@PathVariable Long venueId) {
+
         return reviewService.getVenueReviewStats(venueId);
     }
 }

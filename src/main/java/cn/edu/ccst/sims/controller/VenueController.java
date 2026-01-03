@@ -37,7 +37,13 @@ public class VenueController {
                 venueService.listVenues(pageNum, pageSize, type, name, status);
         return Result.success(page);
     }
-
+    @GetMapping("/{id}")
+    public Result detail(@PathVariable Long id) {
+        System.out.print("调用了");
+        VenueDTO dto = venueService.getVenueDetail(id);
+        System.out.print(dto);
+        return Result.success(dto);
+    }
     /**
      * ================= 管理员接口 =================
      */
@@ -46,7 +52,7 @@ public class VenueController {
      * 管理员查看场馆详情（编辑回显）
      */
     @GetMapping("/admin/{id}")
-    public Result detail(@PathVariable Long id) {
+    public Result detailAdmin(@PathVariable Long id) {
         VenueDTO dto = venueService.getVenueDetail(id);
         return Result.success(dto);
     }

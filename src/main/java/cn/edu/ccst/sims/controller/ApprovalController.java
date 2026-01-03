@@ -28,23 +28,4 @@ public class ApprovalController {
     public Result<List<RentalApprovalVO>> getRentals() {
         return Result.success(approvalService.getPendingRentals());
     }
-
-    // 审核操作
-    // POST /api/admin/approval/audit
-    // Body: { "type": "booking"|"rental", "id": 1, "pass": true|false }
-    @PostMapping("/audit")
-    public Result<String> audit(@RequestBody Map<String, Object> params) {
-        String type = (String) params.get("type");
-        Long id = Long.valueOf(params.get("id").toString());
-        Boolean pass = (Boolean) params.get("pass");
-
-        if ("booking".equals(type)) {
-            approvalService.auditBooking(id, pass);
-        } else if ("rental".equals(type)) {
-            approvalService.auditRental(id, pass);
-        } else {
-            return Result.error("未知类型");
-        }
-        return Result.success("操作成功");
-    }
 }

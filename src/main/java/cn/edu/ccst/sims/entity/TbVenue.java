@@ -66,5 +66,7 @@ public class TbVenue {
      * 场馆说明
      */
     private String remark;
+//    标签
+    private String tags;        // 标签 (新增字段)
 
 }

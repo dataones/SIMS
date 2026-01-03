@@ -54,4 +54,5 @@ public class TbEquipment {
      * 品牌
      */
     private String brand;
+    private Integer status; // 1-上架, 0-下架
 }

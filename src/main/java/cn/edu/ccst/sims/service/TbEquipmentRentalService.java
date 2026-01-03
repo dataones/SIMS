@@ -28,5 +28,5 @@ public interface TbEquipmentRentalService {
     Result<Void> reject(Long rentalId);
 
     // 用户归还器材
-    Result<Void> returnEquipment(Long rentalId, Long userId);
+    Result<Void> returnEquipment(String orderNo, Long userId);
 }
