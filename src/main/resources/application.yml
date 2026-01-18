@@ -1,0 +1,68 @@
+spring:
+  application:
+    name: SIMS
+
+  profiles:
+    include: order
+
+  config:
+    import: "classpath:application-order.yml"
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/sims_db?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
+    username: 你的数据库名
+    password: 你的数据库密码
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      connection-timeout: 30000
+      maximum-pool-size: 10
+      minimum-idle: 10
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  transaction:
+    default-timeout: 30
+    rollback-for: true
+    management:
+      only-current: true
+
+  mybatis-plus:
+    configuration:
+      log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+      map-underscore-to-camel-case: true
+    global-config:
+      db-config:
+        id-type: auto
+        table-underline: true
+      type-aliases-package: cn.edu.ccst.sims.entity
+
+  logging:
+    level:
+      org.apache.ibatis: DEBUG
+      org.mybatis.spring: DEBUG
+      cn.edu.ccst.sims: DEBUG
+      com.zaxxer.hikari: DEBUG
+
+  pagehelper:
+    helper-dialect: mysql
+    reasonable: true
+    support-methods-arguments: true
+    params: count=countSql
+
+# ✅ JWT 配置 —— 注意：不在 spring 下面
+jwt:
+  secret: A1b2C3d4E5f6G7h8I9j0K1l2M3n4O5p6Q7r8S9t0U1v2W3x4Y5z6A1b2C3d4E5f6G7h8I9j0
+  expiration: 86400
+
+# 服务器配置（同级）
+server:
+  port: 8080
+
+# 阿里云OSS配置
+aliyun:
+  oss:
+    endpoint: 你的地址
+    accessKeyId: 你的id
+    accessKeySecret: 你的key
+    bucketName: bucket名称
+    domain: 地址

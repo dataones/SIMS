@@ -1,0 +1,9 @@
+# 订单自动取消配置
+order:
+  auto-cancel:
+    # 是否启用自动取消功能
+    enabled: true
+    # 未支付订单超时时间（分钟）- 测试阶段设置为30秒
+    timeout-minutes: 0.5
+    # 定时任务执行间隔（分钟）- 测试阶段设置为10秒
+    check-interval-minutes: 0.1667

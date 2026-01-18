@@ -1,0 +1,222 @@
+package cn.edu.ccst.sims.controller;
+
+import cn.edu.ccst.sims.common.Result;
+import cn.edu.ccst.sims.dto.NoticeDTO;
+import cn.edu.ccst.sims.entity.SysUser;
+import cn.edu.ccst.sims.mapper.SysUserMapper;
+import cn.edu.ccst.sims.service.NoticeService;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
+
+@Tag(name = "通知公告管理")
+@RestController
+@RequestMapping("/api/admin/notices")
+public class NoticeController {
+
+    @Autowired
+    private NoticeService noticeService;
+
+    @Autowired
+    private SysUserMapper userMapper;
+
+    @Operation(summary = "发布公告")
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/publish")
+    public Result<String> publishNotice(@AuthenticationPrincipal Long userId,
+            @Valid @RequestBody NoticeDTO noticeDTO) {
+        try {
+            if (userId == null) {
+                return Result.error(401, "未登录");
+            }
+
+            // 校验管理员权限
+            SysUser admin = userMapper.selectById(userId);
+            if (admin == null || admin.getRole() != 2) {
+                return Result.error(403, "无管理员权限");
+            }
+
+            noticeService.publishNotice(userId, noticeDTO);
+            return Result.success("公告发布成功");
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    @Operation(summary = "修改公告")
+    @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping("/{id}")
+    public Result<String> updateNotice(@AuthenticationPrincipal Long userId,
+            @PathVariable Long id,
+            @Valid @RequestBody NoticeDTO noticeDTO) {
+        try {
+            if (userId == null) {
+                return Result.error(401, "未登录");
+            }
+
+            // 校验管理员权限
+            SysUser admin = userMapper.selectById(userId);
+            if (admin == null || admin.getRole() != 2) {
+                return Result.error(403, "无管理员权限");
+            }
+
+            noticeService.updateNotice(id, noticeDTO);
+            return Result.success("公告修改成功");
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    @Operation(summary = "删除公告")
+    @PreAuthorize("hasRole('ADMIN')")
+    @DeleteMapping("/{id}")
+    public Result<String> deleteNotice(@AuthenticationPrincipal Long userId,
+            @PathVariable Long id) {
+        try {
+            if (userId == null) {
+                return Result.error(401, "未登录");
+            }
+
+            // 校验管理员权限
+            SysUser admin = userMapper.selectById(userId);
+            if (admin == null || admin.getRole() != 2) {
+                return Result.error(403, "无管理员权限");
+            }
+
+            noticeService.deleteNotice(id);
+            return Result.success("公告删除成功");
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    @Operation(summary = "获取公告列表")
+    @GetMapping
+    public Result<Page<Map<String, Object>>> getNoticeList(
+            @Parameter(description = "页码") @RequestParam(defaultValue = "1") Integer pageNum,
+            @Parameter(description = "每页数量") @RequestParam(defaultValue = "10") Integer pageSize,
+            @Parameter(description = "搜索关键词") @RequestParam(required = false) String keyword,
+            @Parameter(description = "公告类型") @RequestParam(required = false) String type,
+            @Parameter(description = "发布状态") @RequestParam(required = false) Integer status,
+            @Parameter(description = "优先级") @RequestParam(required = false) Integer priority) {
+        try {
+            System.out.println("=== NoticeController.getNoticeList 被调用 ===");
+            System.out.println("请求参数: pageNum=" + pageNum + ", pageSize=" + pageSize + ", keyword=" + keyword + ", type=" + type + ", status=" + status + ", priority=" + priority);
+
+            Page<Map<String, Object>> page = noticeService.getNoticeList(pageNum, pageSize, keyword, type, status, priority);
+
+            System.out.println("=== NoticeController 返回结果 ===");
+            System.out.println("返回数据记录数: " + page.getRecords().size());
+            System.out.println("返回数据总数: " + page.getTotal());
+
+            return Result.success(page);
+        } catch (Exception e) {
+            System.out.println("=== NoticeController 异常 ===");
+            System.out.println("异常信息: " + e.getMessage());
+            e.printStackTrace();
+            return Result.error(e.getMessage());
+        }
+    }
+
+    @Operation(summary = "获取公开公告列表")
+    @GetMapping("/public")
+    public Result<Page<Map<String, Object>>> getPublicNoticeList(
+            @Parameter(description = "页码") @RequestParam(defaultValue = "1") Integer pageNum,
+            @Parameter(description = "每页数量") @RequestParam(defaultValue = "10") Integer pageSize) {
+        try {
+            // 获取所有已发布的公告
+            Page<Map<String, Object>> page = noticeService.getNoticeList(pageNum, pageSize, null, null, 1, null);
+            return Result.success(page);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    @Operation(summary = "获取公告详情")
+    @GetMapping("/{id}")
+    public Result<Map<String, Object>> getNoticeDetail(@PathVariable Long id) {
+        try {
+            Map<String, Object> notice = noticeService.getNoticeDetail(id);
+            if (notice == null) {
+                return Result.error("公告不存在");
+            }
+            return Result.success(notice);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    @Operation(summary = "置顶/取消置顶公告")
+    @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping("/{id}/top")
+    public Result<String> toggleTop(@AuthenticationPrincipal Long userId,
+            @PathVariable Long id,
+            @RequestBody Map<String, Boolean> topMap) {
+        try {
+            if (userId == null) {
+                return Result.error(401, "未登录");
+            }
+
+            // 校验管理员权限
+            SysUser admin = userMapper.selectById(userId);
+            if (admin == null || admin.getRole() != 2) {
+                return Result.error(403, "无管理员权限");
+            }
+
+            Boolean isTop = topMap.get("isTop");
+            noticeService.toggleTop(id, isTop);
+            return Result.success(isTop ? "置顶成功" : "取消置顶成功");
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    @Operation(summary = "获取最新公告（首页展示）")
+    @GetMapping("/latest")
+    public Result<List<Map<String, Object>>> getLatestNotices(
+            @Parameter(description = "数量限制") @RequestParam(defaultValue = "5") Integer limit) {
+        try {
+            List<Map<String, Object>> notices = noticeService.getLatestNotices(limit);
+            return Result.success(notices);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    @Operation(summary = "管理员获取所有公告")
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/admin/list")
+    public Result<Page<Map<String, Object>>> adminGetNoticeList(
+            @AuthenticationPrincipal Long userId,
+            @Parameter(description = "页码") @RequestParam(defaultValue = "1") Integer pageNum,
+            @Parameter(description = "每页数量") @RequestParam(defaultValue = "10") Integer pageSize,
+            @Parameter(description = "公告类型") @RequestParam(required = false) String type,
+            @Parameter(description = "状态") @RequestParam(required = false) Integer status,
+            @Parameter(description = "标题") @RequestParam(required = false) String title) {
+        try {
+            if (userId == null) {
+                return Result.error(401, "未登录");
+            }
+
+            // 校验管理员权限
+            SysUser admin = userMapper.selectById(userId);
+            if (userId == null || admin.getRole() != 2) {
+                return Result.error(403, "无管理员权限");
+            }
+
+            Page<Map<String, Object>> page = noticeService.adminGetNoticeList(pageNum, pageSize, type, status, title);
+            return Result.success(page);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+}
