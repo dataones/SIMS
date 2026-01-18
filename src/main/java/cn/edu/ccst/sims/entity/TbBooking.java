@@ -1,5 +1,6 @@
 package cn.edu.ccst.sims.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -17,7 +18,7 @@ public class TbBooking {
     /**
      * 预约ID
      */
-    @TableId
+    @TableId(type = IdType.AUTO)
     private Long id;
     /**
      * 预约单号(关联订单)

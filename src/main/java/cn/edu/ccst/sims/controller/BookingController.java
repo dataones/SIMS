@@ -36,13 +36,14 @@ public class BookingController {
     private TbBookingService bookingService;
     @Autowired
     private SysUserMapper userMapper;
+
     /**
      * 提交场馆预约
      */
     @Operation(summary = "提交场馆预约")
     @PostMapping("/submit")
     public Result<Long> submitBooking(@Valid @RequestBody BookingDTO bookingDTO,
-                                      @AuthenticationPrincipal Long userId) {
+            @AuthenticationPrincipal Long userId) {
         try {
             if (userId == null) {
                 return Result.error(401, "未登录");
@@ -60,7 +61,7 @@ public class BookingController {
     @Operation(summary = "修改场馆预约")
     @PutMapping("/update")
     public Result<Void> updateBooking(@Valid @RequestBody BookingDTO bookingDTO,
-                                      @AuthenticationPrincipal Long userId) {
+            @AuthenticationPrincipal Long userId) {
         try {
             if (userId == null) {
                 return Result.error(401, "未登录");
@@ -76,14 +77,14 @@ public class BookingController {
      * 取消预约
      */
     @Operation(summary = "取消预约")
-    @PutMapping("/cancel/{id}")
-    public Result<Void> cancelBooking(@Parameter(description = "预约ID") @PathVariable Long id,
-                                      @AuthenticationPrincipal Long userId) {
+    @PutMapping("/cancel/{orderNo}")
+    public Result<Void> cancelBooking(@Parameter(description = "订单号") @PathVariable String orderNo,
+            @AuthenticationPrincipal Long userId) {
         try {
             if (userId == null) {
                 return Result.error(401, "未登录");
             }
-            bookingService.cancelBooking(id, userId);
+            bookingService.cancelBookingByOrderNo(orderNo, userId);
             return Result.success();
         } catch (Exception e) {
             return Result.error(e.getMessage());
@@ -96,9 +97,9 @@ public class BookingController {
     @Operation(summary = "管理员审核预约")
     @PutMapping("/audit/{id}")
     public Result<Void> auditBooking(@PathVariable Long id,
-                                     @RequestParam Integer status,
-                                     @RequestParam(required = false) String remark,
-                                     @AuthenticationPrincipal Long userId) {
+            @RequestParam Integer status,
+            @RequestParam(required = false) String remark,
+            @AuthenticationPrincipal Long userId) {
         try {
             if (userId == null) {
                 return Result.error(401, "未登录");

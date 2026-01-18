@@ -17,24 +17,32 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin // 临时允许跨域，前端开发用
+@CrossOrigin(origins = { "http://localhost:3000", "http://127.0.0.1:3000" }, allowCredentials = "true")
 public class AuthController {
 
     @Autowired
     private UserService userService;
     @Autowired
     private SysUserMapper userMapper;
+
     @PostMapping("/login")
     public Result login(@Valid @RequestBody LoginDTO dto) {
-        String token = userService.login(dto);
-        SysUser user = userMapper.selectOne(new QueryWrapper<SysUser>().eq("username", dto.getUsername()));
-        Map<String, Object> data = new HashMap<>();
-        data.put("token", token);
-        data.put("userId", user.getId());
-        data.put("username", user.getUsername());
-        data.put("nickname", user.getNickname());
-        data.put("role", user.getRole());
-        return Result.success(data);
+        try {
+            String token = userService.login(dto);
+            SysUser user = userMapper.selectOne(new QueryWrapper<SysUser>().eq("username", dto.getUsername()));
+            Map<String, Object> data = new HashMap<>();
+            data.put("token", token);
+            data.put("userId", user.getId());
+            data.put("username", user.getUsername());
+            data.put("nickname", user.getNickname());
+            data.put("role", user.getRole());
+            return Result.success(data);
+        } catch (RuntimeException e) {
+            return Result.error(e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.error("登录失败：" + e.getMessage());
+        }
     }
 
     @PostMapping("/register")
@@ -42,6 +50,7 @@ public class AuthController {
         userService.register(dto);
         return Result.success("注册成功");
     }
+
     // 新增：获取用户信息接口
     @GetMapping("/user-info")
     public Result getUserInfo(@AuthenticationPrincipal Long userId) {
@@ -62,7 +71,7 @@ public class AuthController {
     // 新增：更新用户信息接口（可选）
     @PutMapping("/user/update")
     public Result updateUserInfo(@RequestHeader("Authorization") String token,
-                                 @RequestBody Map<String, String> updateData) {
+            @RequestBody Map<String, String> updateData) {
         Integer userId = userService.getUserIdFromToken(token);
         SysUser user = userMapper.selectById(userId);
 

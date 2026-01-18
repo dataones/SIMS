@@ -8,6 +8,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/venue")
 public class VenueController {
@@ -22,8 +24,8 @@ public class VenueController {
     /**
      * 场馆列表查询（支持分页 + 搜索）
      * status：
-     *   - 不传：默认只查正常场馆
-     *   - 传 0 / 1：按状态查询（管理员可用）
+     * - 不传：默认只查正常场馆
+     * - 传 0 / 1：按状态查询（管理员可用）
      */
     @GetMapping("/list")
     public Result list(
@@ -33,17 +35,26 @@ public class VenueController {
             @RequestParam(required = false) String name,
             @RequestParam(required = false) Integer status) {
 
-        Page<VenueDTO> page =
-                venueService.listVenues(pageNum, pageSize, type, name, status);
+        Page<VenueDTO> page = venueService.listVenues(pageNum, pageSize, type, name, status);
         return Result.success(page);
     }
+
     @GetMapping("/{id}")
     public Result detail(@PathVariable Long id) {
-        System.out.print("调用了");
         VenueDTO dto = venueService.getVenueDetail(id);
         System.out.print(dto);
         return Result.success(dto);
     }
+
+    /**
+     * 获取推荐场馆
+     */
+    @GetMapping("/recommended")
+    public Result getRecommendedVenues(@RequestParam(defaultValue = "4") Integer limit) {
+        List<VenueDTO> venues = venueService.getRecommendedVenues(limit);
+        return Result.success(venues);
+    }
+
     /**
      * ================= 管理员接口 =================
      */
@@ -62,8 +73,20 @@ public class VenueController {
      */
     @PostMapping("/admin")
     public Result add(@RequestBody TbVenue venue) {
-        venueService.addVenue(venue);
-        return Result.success("添加成功");
+        System.out.println("=== 收到添加场馆请求 ===");
+        System.out.println("场馆名称: " + venue.getName());
+        System.out.println("图片URL: " + venue.getImage());
+        System.out.println("图片URL是否为空: " + (venue.getImage() == null || venue.getImage().isEmpty()));
+        // System.out.println("完整JSON数据: " + JSON.toJSONString(venue));
+
+        try {
+            venueService.addVenue(venue);
+            return Result.success("添加成功");
+        } catch (Exception e) {
+            System.err.println("添加场馆异常: " + e.getMessage());
+            e.printStackTrace();
+            return Result.error(e.getMessage());
+        }
     }
 
     /**

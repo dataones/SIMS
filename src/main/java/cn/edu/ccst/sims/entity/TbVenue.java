@@ -1,5 +1,6 @@
 package cn.edu.ccst.sims.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -16,7 +17,7 @@ public class TbVenue {
     /**
      * 场馆ID
      */
-    @TableId
+    @TableId(type = IdType.AUTO)
     private Long id;
     /**
      * 场馆名称
@@ -66,7 +67,7 @@ public class TbVenue {
      * 场馆说明
      */
     private String remark;
-//    标签
-    private String tags;        // 标签 (新增字段)
+    // 标签
+    private String tags; // 标签 (新增字段)
 
 }

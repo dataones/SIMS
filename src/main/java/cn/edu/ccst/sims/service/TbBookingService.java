@@ -32,6 +32,11 @@ public interface TbBookingService extends IService<TbBooking> {
     void cancelBooking(Long bookingId, Long userId);
 
     /**
+     * 根据订单号取消预约
+     */
+    void cancelBookingByOrderNo(String orderNo, Long userId);
+
+    /**
      * 管理员审核预约
      */
     void auditBooking(Long bookingId, Integer status, String remark);

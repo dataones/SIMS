@@ -40,6 +40,7 @@ public class TbBookingServiceImpl extends ServiceImpl<TbBookingMapper, TbBooking
     private TbVenueMapper venueMapper;
     @Autowired
     private TbOrderMapper orderMapper;
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long submitBooking(BookingDTO bookingDTO, Long userId) {
@@ -72,38 +73,46 @@ public class TbBookingServiceImpl extends ServiceImpl<TbBookingMapper, TbBooking
 
         // 6. 创建预约记录
         // 6. 生成统一的订单号
-        String orderNo = generateOrderNo();  // 使用BK开头的单号
+        String orderNo = generateOrderNo(); // 使用BK开头的单号
 
-// 创建预约记录
+        // 创建预约记录
         TbBooking booking = new TbBooking();
         BeanUtils.copyProperties(bookingDTO, booking);
-        booking.setOrderNo(orderNo);  // 预约记录也使用这个单号
+        booking.setOrderNo(orderNo); // 预约记录也使用这个单号
         booking.setUserId(userId);
         booking.setTotalPrice(totalPrice);
         booking.setStatus(0); // 待审核
         booking.setCreateTime(LocalDateTime.now());
         booking.setUpdateTime(LocalDateTime.now());
 
-        save(booking);  // 保存预约记录
+        save(booking); // 保存预约记录
 
-// 7. 创建订单记录
+        // 确保预约ID已正确生成
+        if (booking.getId() == null) {
+            throw new RuntimeException("预约记录创建失败，ID未生成");
+        }
+
+        // 7. 创建订单记录
         TbOrder order = new TbOrder();
-        order.setOrderNo(orderNo);  // 使用同一个单号
+        order.setOrderNo(orderNo); // 使用同一个单号
         order.setUserId(userId);
-        order.setRelatedId(booking.getId());  // 关联预约ID
-        order.setType(1);  // 1-场馆预约
+        order.setRelatedId(booking.getId()); // 关联预约ID
+        order.setType(1); // 1-场馆预约
         order.setAmount(totalPrice);
-        order.setStatus(0);  // 0-未支付
+        order.setStatus(0); // 0-未支付
         order.setCreateTime(LocalDateTime.now());
         order.setUpdateTime(LocalDateTime.now());
 
-        orderMapper.insert(order);  // 保存订单记录
+        orderMapper.insert(order); // 保存订单记录
+
+        // 验证订单ID生成
+        if (order.getId() == null) {
+            throw new RuntimeException("订单记录创建失败，ID未生成");
+        }
 
         return booking.getId();
-
     }
 
-    @Override
     @Transactional(rollbackFor = Exception.class)
     public void updateBooking(BookingDTO bookingDTO, Long userId) {
         // 1. 检查预约是否存在
@@ -185,6 +194,17 @@ public class TbBookingServiceImpl extends ServiceImpl<TbBookingMapper, TbBooking
         booking.setStatus(3); // 已取消
         booking.setUpdateTime(LocalDateTime.now());
         updateById(booking);
+
+        // 同时更新关联订单的状态
+        LambdaQueryWrapper<TbOrder> orderWrapper = new LambdaQueryWrapper<>();
+        orderWrapper.eq(TbOrder::getRelatedId, bookingId)
+                .eq(TbOrder::getType, 1); // 1-场馆预约
+        TbOrder order = orderMapper.selectOne(orderWrapper);
+        if (order != null) {
+            order.setStatus(2); // 2-已退款
+            order.setUpdateTime(LocalDateTime.now());
+            orderMapper.updateById(order);
+        }
     }
 
     @Override
@@ -285,19 +305,44 @@ public class TbBookingServiceImpl extends ServiceImpl<TbBookingMapper, TbBooking
             throw new RuntimeException("结束时间必须晚于开始时间");
         }
 
-        long minutes = java.time.Duration.between(start, end).toMinutes();
-        BigDecimal hours = BigDecimal.valueOf(minutes).divide(BigDecimal.valueOf(60), 2, BigDecimal.ROUND_HALF_UP);
+        // 基础价格（元/小时）
+        BigDecimal basePrice = venue.getPrice() != null ? venue.getPrice() : new BigDecimal("100.00");
 
-        return venue.getPrice()
-                .multiply(hours)
-                .multiply(new BigDecimal("1.1"));
+        // 按小时计算场地费用，支持高峰时段加价（与前端保持一致）
+        BigDecimal venuePrice = BigDecimal.ZERO;
+        LocalTime currentStart = start;
+
+        while (currentStart.isBefore(end)) {
+            LocalTime currentEnd = currentStart.plusHours(1);
+            if (currentEnd.isAfter(end)) {
+                currentEnd = end;
+            }
+
+            // 判断是否为高峰时段（18:00-21:00）
+            int hour = currentStart.getHour();
+            boolean isPeak = hour >= 18 && hour < 21;
+
+            // 计算当前小时的费用
+            BigDecimal hourPrice = isPeak ? basePrice.multiply(new BigDecimal("1.2")) : basePrice;
+            venuePrice = venuePrice.add(hourPrice);
+
+            currentStart = currentEnd;
+        }
+
+        // 服务费：场地费用的10%
+        BigDecimal serviceFee = venuePrice.multiply(new BigDecimal("0.1"));
+
+        // 总金额：场地费用 + 服务费
+        BigDecimal totalPrice = venuePrice.add(serviceFee);
+
+        return totalPrice.setScale(2, BigDecimal.ROUND_HALF_UP);
     }
 
     /**
      * 生成预约单号
      */
     private String generateOrderNo() {
-        return "BK" + System.currentTimeMillis() + String.format("%04d", (int)(Math.random() * 10000));
+        return "BK" + System.currentTimeMillis() + String.format("%04d", (int) (Math.random() * 10000));
     }
 
     /**
@@ -367,5 +412,53 @@ public class TbBookingServiceImpl extends ServiceImpl<TbBookingMapper, TbBooking
         }
 
         return vo;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void cancelBookingByOrderNo(String orderNo, Long userId) {
+        // 根据订单号查找预约记录
+        LambdaQueryWrapper<TbBooking> bookingWrapper = new LambdaQueryWrapper<>();
+        bookingWrapper.eq(TbBooking::getOrderNo, orderNo);
+        TbBooking booking = getOne(bookingWrapper);
+
+        if (booking == null) {
+            throw new RuntimeException("预约记录不存在");
+        }
+
+        if (!booking.getUserId().equals(userId)) {
+            throw new RuntimeException("无权限取消此预约");
+        }
+
+        if (booking.getStatus() == 3) {
+            throw new RuntimeException("预约已取消");
+        }
+
+        if (booking.getStatus() == 4) {
+            throw new RuntimeException("预约已完成，无法取消");
+        }
+
+        // 检查是否可以取消（预约时间前2小时可以取消）
+        LocalDateTime bookingDateTime = LocalDateTime.of(booking.getDate(),
+                LocalTime.parse(booking.getStartTime()));
+        if (LocalDateTime.now().plusHours(2).isAfter(bookingDateTime)) {
+            throw new RuntimeException("预约开始前2小时内不可取消");
+        }
+
+        // 更新预约状态
+        booking.setStatus(3); // 已取消
+        booking.setUpdateTime(LocalDateTime.now());
+        updateById(booking);
+
+        // 同时更新关联订单的状态
+        LambdaQueryWrapper<TbOrder> orderWrapper = new LambdaQueryWrapper<>();
+        orderWrapper.eq(TbOrder::getRelatedId, booking.getId())
+                .eq(TbOrder::getType, 1); // 1-场馆预约
+        TbOrder order = orderMapper.selectOne(orderWrapper);
+        if (order != null) {
+            order.setStatus(3); // 2-已取消
+            order.setUpdateTime(LocalDateTime.now());
+            orderMapper.updateById(order);
+        }
     }
 }

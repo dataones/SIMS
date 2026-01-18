@@ -1,5 +1,6 @@
 package cn.edu.ccst.sims.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -15,7 +16,7 @@ public class TbFaultReport {
     /**
      * 报修ID
      */
-    @TableId
+    @TableId(type = IdType.AUTO)
     private Long id;
     /**
      * 申报人ID
@@ -34,6 +35,18 @@ public class TbFaultReport {
      */
     private String content;
     /**
+     * 紧急程度: LOW-低, MEDIUM-中, HIGH-高
+     */
+    private String urgency;
+    /**
+     * 故障位置
+     */
+    private String location;
+    /**
+     * 故障类型
+     */
+    private String faultType;
+    /**
      * 状态: 0-待处理, 1-处理中, 2-已修复
      */
     private Integer status;
@@ -45,8 +58,4 @@ public class TbFaultReport {
      * 申报时间
      */
     private LocalDateTime createTime;
-    /**
-     * 更新时间
-     */
-    private LocalDateTime updateTime;
 }

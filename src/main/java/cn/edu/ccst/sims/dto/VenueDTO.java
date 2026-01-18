@@ -7,8 +7,8 @@ import java.math.BigDecimal;
 public class VenueDTO {
     private Long id;
     private String name;
-    private String type;       // 分类
-    private BigDecimal price;  // 每小时费用
+    private String type; // 分类
+    private BigDecimal price; // 每小时费用
     private String location;
     private String description;
     private String image;

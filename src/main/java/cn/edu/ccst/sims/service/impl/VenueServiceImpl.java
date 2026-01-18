@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
+import java.util.List;
 
 @Service
 public class VenueServiceImpl implements VenueService {
@@ -24,10 +25,10 @@ public class VenueServiceImpl implements VenueService {
      */
     @Override
     public Page<VenueDTO> listVenues(Integer pageNum,
-                                     Integer pageSize,
-                                     String type,
-                                     String name,
-                                     Integer status) {
+            Integer pageSize,
+            String type,
+            String name,
+            Integer status) {
 
         pageNum = pageNum == null || pageNum < 1 ? 1 : pageNum;
         pageSize = pageSize == null || pageSize < 1 ? 10 : pageSize;
@@ -81,13 +82,42 @@ public class VenueServiceImpl implements VenueService {
     }
 
     /**
+     * 获取推荐场馆
+     */
+    @Override
+    public List<VenueDTO> getRecommendedVenues(Integer limit) {
+        // 查询状态为可用(1)的场馆
+        QueryWrapper<TbVenue> wrapper = new QueryWrapper<>();
+        wrapper.eq("status", 1); // 只查询可用场馆
+
+        List<TbVenue> venues = venueMapper.selectList(wrapper);
+
+        // 随机打乱场馆列表
+        java.util.Collections.shuffle(venues);
+
+        // 手动限制数量
+        if (limit != null && limit > 0 && venues.size() > limit) {
+            venues = venues.subList(0, limit);
+        }
+
+        // 转换为DTO
+        List<VenueDTO> result = new ArrayList<>();
+        for (TbVenue venue : venues) {
+            VenueDTO dto = new VenueDTO();
+            BeanUtils.copyProperties(venue, dto);
+            result.add(dto);
+        }
+
+        return result;
+    }
+
+    /**
      * 添加场馆（管理员）
      */
     @Override
     public void addVenue(TbVenue venue) {
         TbVenue exist = venueMapper.selectOne(
-                new QueryWrapper<TbVenue>().eq("name", venue.getName())
-        );
+                new QueryWrapper<TbVenue>().eq("name", venue.getName()));
         if (exist != null) {
             throw new RuntimeException("场馆名称已存在");
         }
