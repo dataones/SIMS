@@ -30,7 +30,7 @@ public class OrderScheduledTask {
      * 定时检查未支付订单
      * 执行间隔由配置文件决定
      */
-    @Scheduled(fixedRate = 10000) // 10秒固定间隔
+    @Scheduled(fixedRate = 60000) // 1分钟固定间隔
     public void cancelUnpaidOrders() {
         try {
             log.info("开始执行未支付订单自动取消任务，超时时间：{}分钟", timeoutMinutes);

@@ -9,9 +9,10 @@ import cn.edu.ccst.sims.utils.JwtUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.util.DigestUtils;  // Spring 自带 MD5
+import org.springframework.util.DigestUtils; // Spring 自带 MD5
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Map;
 
 @Service
@@ -76,12 +77,14 @@ public class UserServiceImpl implements UserService {
         user.setPassword(md5(dto.getPassword()));
         user.setPhone(dto.getPhone());
         user.setEmail(dto.getEmail());
-        user.setNickname(dto.getNickname() == null || dto.getNickname().isBlank() ? dto.getUsername() : dto.getNickname());
+        user.setNickname(
+                dto.getNickname() == null || dto.getNickname().isBlank() ? dto.getUsername() : dto.getNickname());
         user.setRole(0);
         user.setBalance(BigDecimal.ZERO);
         user.setStatus(1);
         userMapper.insert(user);
     }
+
     // 新增：获取用户详细信息
     public Map<String, Object> getUserInfo(Integer userId) {
         SysUser user = userMapper.selectById(userId);
@@ -95,6 +98,7 @@ public class UserServiceImpl implements UserService {
         userInfo.put("id", user.getId());
         userInfo.put("username", user.getUsername());
         userInfo.put("nickname", user.getNickname());
+        userInfo.put("avatar", user.getAvatar());
         userInfo.put("phone", user.getPhone());
         userInfo.put("email", user.getEmail());
         userInfo.put("role", user.getRole());
@@ -105,6 +109,7 @@ public class UserServiceImpl implements UserService {
 
         return userInfo;
     }
+
     @Override
     public Integer getUserIdFromToken(String token) {
         // 移除 "Bearer " 前缀（如果有）
@@ -119,5 +124,29 @@ public class UserServiceImpl implements UserService {
         } catch (Exception e) {
             throw new RuntimeException("Token解析失败");
         }
+    }
+
+    @Override
+    public boolean verifyPassword(String plainPassword, String hashedPassword) {
+        // 将明文密码进行MD5加密后与存储的密码比较
+        String md5PlainPassword = md5(plainPassword);
+        return md5PlainPassword.equals(hashedPassword);
+    }
+
+    @Override
+    public void updatePassword(Integer userId, String newPassword) {
+        if (userId == null || newPassword == null || newPassword.trim().isEmpty()) {
+            throw new RuntimeException("参数不完整");
+        }
+
+        SysUser user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new RuntimeException("用户不存在");
+        }
+
+        // 更新密码
+        user.setPassword(md5(newPassword.trim()));
+        user.setUpdateTime(LocalDateTime.now());
+        userMapper.updateById(user);
     }
 }

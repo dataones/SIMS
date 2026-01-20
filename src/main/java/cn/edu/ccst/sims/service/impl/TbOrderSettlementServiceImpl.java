@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -56,22 +57,41 @@ public class TbOrderSettlementServiceImpl extends ServiceImpl<TbOrderMapper, TbO
             Integer type,
             Long relatedId,
             BigDecimal baseAmount) {
-
-        // 示例：统一 9 折
-        BigDecimal discountRate = new BigDecimal("0.9");
-        BigDecimal finalAmount = baseAmount.multiply(discountRate);
-
         TbOrder order = new TbOrder();
         order.setOrderNo(generateOrderNo(type));
         order.setUserId(userId);
         order.setRelatedId(relatedId);
         order.setType(type);
-        order.setAmount(finalAmount);
+        order.setAmount(baseAmount);
         order.setStatus(0); // 待支付
         order.setCreateTime(LocalDateTime.now());
 
         orderMapper.insert(order);
         return Result.success(order.getId());
+    }
+
+    private BigDecimal getRoleDiscountRate(Long userId) {
+        SysUser user = userMapper.selectById(userId);
+        if (user == null || user.getRole() == null) {
+            return BigDecimal.ONE;
+        }
+        if (user.getRole() == 1) {
+            return new BigDecimal("0.88");
+        }
+        if (user.getRole() == 2) {
+            return new BigDecimal("0.6");
+        }
+        return BigDecimal.ONE;
+    }
+
+    private BigDecimal applyRoleDiscount(BigDecimal amount, BigDecimal discountRate) {
+        if (amount == null) {
+            return BigDecimal.ZERO;
+        }
+        if (discountRate == null) {
+            return amount;
+        }
+        return amount.multiply(discountRate).setScale(2, RoundingMode.HALF_UP);
     }
 
     /**
@@ -82,6 +102,8 @@ public class TbOrderSettlementServiceImpl extends ServiceImpl<TbOrderMapper, TbO
     public Result<Void> payOrder(Long userId, String orderNo) {
         System.out.println("处理支付: orderNo=" + orderNo + ", userId=" + userId);
 
+        BigDecimal discountRate = getRoleDiscountRate(userId);
+
         // 1. 首先尝试从 tb_order 表查询
         TbOrder order = orderMapper.selectOne(
                 new LambdaQueryWrapper<TbOrder>()
@@ -90,7 +112,7 @@ public class TbOrderSettlementServiceImpl extends ServiceImpl<TbOrderMapper, TbO
 
         if (order != null) {
             System.out.println("在 tb_order 表中找到订单，进行支付处理");
-            return processExistingOrderPayment(order);
+            return processExistingOrderPayment(order, discountRate);
         }
 
         // 2. 如果 tb_order 表中没有，尝试从 tb_booking 表查询
@@ -101,7 +123,7 @@ public class TbOrderSettlementServiceImpl extends ServiceImpl<TbOrderMapper, TbO
 
         if (booking != null) {
             System.out.println("在 tb_booking 表中找到预约记录，进行支付处理");
-            return processBookingPayment(booking);
+            return processBookingPayment(booking, discountRate);
         }
 
         // 3. 最后尝试从 tb_equipment_rental 表查询
@@ -112,7 +134,7 @@ public class TbOrderSettlementServiceImpl extends ServiceImpl<TbOrderMapper, TbO
 
         if (rental != null) {
             System.out.println("在 tb_equipment_rental 表中找到租赁记录，进行支付处理");
-            return processRentalPayment(rental);
+            return processRentalPayment(rental, discountRate);
         }
 
         System.out.println("所有表中都没有找到订单");
@@ -120,10 +142,12 @@ public class TbOrderSettlementServiceImpl extends ServiceImpl<TbOrderMapper, TbO
     }
 
     // 处理已存在的订单支付
-    private Result<Void> processExistingOrderPayment(TbOrder order) {
+    private Result<Void> processExistingOrderPayment(TbOrder order, BigDecimal discountRate) {
         if (order.getStatus() != 0) {
             return Result.error("订单不存在或状态异常");
         }
+
+        order.setAmount(applyRoleDiscount(order.getAmount(), discountRate));
 
         // 更新订单为已支付
         order.setStatus(1);
@@ -156,7 +180,7 @@ public class TbOrderSettlementServiceImpl extends ServiceImpl<TbOrderMapper, TbO
     }
 
     // 处理预约支付
-    private Result<Void> processBookingPayment(TbBooking booking) {
+    private Result<Void> processBookingPayment(TbBooking booking, BigDecimal discountRate) {
         if (booking.getStatus() != 1) {
             return Result.error("预约状态异常，无法支付。当前状态: " + booking.getStatus());
         }
@@ -172,7 +196,7 @@ public class TbOrderSettlementServiceImpl extends ServiceImpl<TbOrderMapper, TbO
         newOrder.setUserId(booking.getUserId());
         newOrder.setRelatedId(booking.getId());
         newOrder.setType(1); // 场馆预约
-        newOrder.setAmount(booking.getTotalPrice());
+        newOrder.setAmount(applyRoleDiscount(booking.getTotalPrice(), discountRate));
         newOrder.setStatus(1); // 已支付
         newOrder.setPayTime(LocalDateTime.now());
         newOrder.setCreateTime(booking.getCreateTime());
@@ -183,7 +207,7 @@ public class TbOrderSettlementServiceImpl extends ServiceImpl<TbOrderMapper, TbO
     }
 
     // 处理租赁支付
-    private Result<Void> processRentalPayment(TbEquipmentRental rental) {
+    private Result<Void> processRentalPayment(TbEquipmentRental rental, BigDecimal discountRate) {
         if (rental.getStatus() != 1) {
             return Result.error("租赁状态异常，无法支付。当前状态: " + rental.getStatus());
         }
@@ -199,7 +223,7 @@ public class TbOrderSettlementServiceImpl extends ServiceImpl<TbOrderMapper, TbO
         newOrder.setUserId(rental.getUserId());
         newOrder.setRelatedId(rental.getId());
         newOrder.setType(2); // 器材租赁
-        newOrder.setAmount(rental.getPrice());
+        newOrder.setAmount(applyRoleDiscount(rental.getPrice(), discountRate));
         newOrder.setStatus(1); // 已支付
         newOrder.setPayTime(LocalDateTime.now());
         newOrder.setCreateTime(rental.getCreateTime());
